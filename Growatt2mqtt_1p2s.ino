@@ -167,7 +167,9 @@ void reconnect() {
       mqtt.subscribe(topic);
       
       // Publish Home Assistant MQTT discovery messages
-      publishHADiscovery(mqtt, clientID, newclientid, topicRoot, buildversion);
+      #ifdef HA_ENABLE_DISCOVERY
+        publishHADiscovery(mqtt, clientID, newclientid, topicRoot, buildversion);
+      #endif
     } else {
       Serial.print(F("failed, rc="));
       Serial.print(mqtt.state());
