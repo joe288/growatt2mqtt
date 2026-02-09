@@ -22,6 +22,7 @@
 #include "globals.h"
 #include "settings.h"
 #include "growattInterface.h"
+#include "mqtt_discovery.h"
 
 os_timer_t myTimer;
 ESP8266WebServer server(80);
@@ -164,6 +165,9 @@ void reconnect() {
       mqtt.publish(topic, "online", true);
       sprintf(topic, "%s/write/#", topicRoot);
       mqtt.subscribe(topic);
+      
+      // Publish Home Assistant MQTT discovery messages
+      publishHADiscovery(mqtt, clientID, newclientid, topicRoot, buildversion);
     } else {
       Serial.print(F("failed, rc="));
       Serial.print(mqtt.state());
