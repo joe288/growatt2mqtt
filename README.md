@@ -9,6 +9,17 @@ Enable state, SaftyFuncEn, Inverter Max output active power percent, Inverter ma
 The sketch also publishes the live statistics every 4 seconds. These are stored in the input registers:
 Inverter run state, Input power, PV1 and PV2 voltage current and power, Output power, Grid frequency, Energy generated today and total and these for both PV1 and PV2, 3 temperatures, Inverter output PF now, Derating mode, Fault and warning codes.
 
+## Home Assistant MQTT Autodiscovery
+When the ESP8266 boots, the gateway automatically sends the required **MQTT Autodiscovery messages** so that Home Assistant can detect all sensors without any manual configuration.  
+The discovery payloads follow Home Assistant’s standard topic structure:
+
+```
+homeassistant/sensor/<device_id>/<sensor_id>/config
+```
+
+Autodiscovery is **only enabled if the flag `HA_ENABLE_DISCOVERY` is set in `settings.h`**.  
+If this flag is disabled, the device will publish only the regular telemetry topics and no discovery messages will be sent.
+
 ## Versions
 My original version was updated by [@joe288](https://github.com/joe288) and the single-ino code was structured into a separte class to make the code more modular and easier to understand. Also check the updated in the topic section for the new Output Level and some other settings can be controlled. Also the inverter can be changed to a higher power inverter than what it was set in the factory. Handle this option with care. More about this in the relevant section below.
 
