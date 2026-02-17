@@ -1,6 +1,7 @@
 //#define DEBUG_SERIAL    1
 //#define DEBUG_MQTT      1 
 //#define useModulPower   1
+#define HA_ENABLE_DISCOVERY 1
 
 #define SERIAL_RATE     115200    // Serial speed for status info
 #define MAX485_DE       5         // D1, DE pin on the TTL to RS485 converter
