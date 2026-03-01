@@ -32,6 +32,11 @@ PubSubClient mqtt(mqtt_server, 1883, 0, espClient);
 CRGB leds[NUM_LEDS];
 growattIF growattInterface(MAX485_RE_NEG, MAX485_DE, MAX485_RX, MAX485_TX);
 
+#ifdef ZeroExport
+#include "zeroExport.h"
+zeroExport zeroExportReader(SmartMeterEndpoint, UPDATE_SMETER);
+#endif
+
 void ReadInputRegisters() {
   char json[1024];
   char topic[80];
@@ -391,6 +396,11 @@ void loop() {
   // Handle HTTP server requests
   server.handleClient();
   ArduinoOTA.handle();
+
+  // Handle SmartMeterReader (non-blocking, performs HTTP request if interval elapsed)
+#ifdef ZeroExport
+    zeroExportReader.handle();
+#endif
 
   // Handle MQTT connection/reconnection
   if (mqtt_server != "") {

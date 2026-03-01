@@ -38,3 +38,8 @@ IPAddress gateway(192, 168, 1, 254);          // Set your Gateway IP address
 IPAddress subnet(255, 255, 255, 0);
 IPAddress primaryDNS(192, 168, 1, 254);   //optional
 IPAddress secondaryDNS(8, 8, 4, 4); //optional
+
+// #define ZeroExport 1
+#define UPDATE_SMETER 5                     //Update smart meter data every 5 seconds
+const char* SmartMeterEndpoint = "http://192.168.X.XXX/cm?cmnd=STATUS%2010";
+
