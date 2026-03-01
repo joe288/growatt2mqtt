@@ -42,4 +42,4 @@ IPAddress secondaryDNS(8, 8, 4, 4); //optional
 // #define ZeroExport 1
 #define UPDATE_SMETER 5                     //Update smart meter data every 5 seconds
 const char* SmartMeterEndpoint = "http://192.168.X.XXX/cm?cmnd=STATUS%2010";
-
+const char* SmartMeterKey = "Power";  // JSON key to read from smart meter response (configurable in settings.h or settings.cpp)
