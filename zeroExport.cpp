@@ -1,6 +1,5 @@
 #include "zeroExport.h"
-// declare external configuration key (defined in main sketch via settings.h)
-extern const char* SmartMeterKey;
+#include "settings.h"
 
 // Constructor
 zeroExport::zeroExport(const char* _endpoint, uint32_t _updateInterval)
@@ -41,16 +40,18 @@ void zeroExport::handle(char dataJson[1024], char settingsJson[1024], uint8_t *o
 
     if (readSmartMeter(&smartmeter) != 0) {
      *output = 100;  // Default to 100% output if smart meter reading fails
+      return;
     }
 
     DeserializationError err = deserializeJson(doc, dataJson);
-    solarpower = doc["solarpower"].as<float>();
+    solarpower = doc["outputpower"].as<float>();
+    doc.clear();
     err = deserializeJson(doc, settingsJson);
     maxpower = doc["maxpower"].as<float>();
     
     float outPercent = 0.0f;
     if (maxpower > 0.0f) {
-      outPercent = ((solarpower + (float)smartmeter) / maxpower) * 100.0f;
+      outPercent = ((solarpower + (float)smartmeter - (float)SmartMeterOffset) / maxpower) * 100.0f;
     }
     if (outPercent < 0.0f) outPercent = 0.0f;
     if (outPercent > 100.0f) outPercent = 100.0f;
