@@ -347,6 +347,21 @@ void callback(char* topic, byte* payload, unsigned int length) {
     }
   }
 
+  sprintf(expectedTopic, "%s/write/setTrakerModel", topicRoot);
+  if (strcmp(expectedTopic, topic) == 0) {
+    char json[50];
+    char topic[80];
+
+    result = growattInterface.writeRegister(growattInterface.regTrakerModel, message.toInt());
+    if (result == growattInterface.Success) {
+      holdingregisters = false;
+    } else {
+      sprintf(json, "last trasmition has faild with: %s", growattInterface.sendModbusError(result).c_str());
+      sprintf(topic, "%s/error", topicRoot);
+      mqtt.publish(topic, json);
+    }
+  }
+
   sprintf(expectedTopic, "%s/write/setStartVoltage", topicRoot);
   if (strcmp(expectedTopic, topic) == 0) {
     char json[50];

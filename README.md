@@ -60,6 +60,7 @@ topicroot/write/getSettings | subscribe |ON | initializes the resending of the s
 topicroot/write/setEnable | subscribe | ON/OFF | enable/disable the output of the growatt
 topicroot/write/setMaxOutput | subscribe | 0-100 | set the output level of the growatt in percent 
 topicroot/write/setStartVoltage | subscribe || set the minimum voltage oft the MPPT tracker 
+topicroot/write/setTrakerModel | subscribe |0-2 | set imput mode 0 = MPPT, 1 = DC (for battery)
 topicroot/write/setModulPower | subscribe |HEX| change the type of inverter. see chapter **ModulPower command**
 
 ## ModulPower command
