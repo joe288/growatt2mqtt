@@ -81,6 +81,25 @@ Value| Powerstage
 
 In order to be able to execute SetModulPower, must be add **#define useModulPower   1** in settings.h.
 
+## Zero Export
+
+The *Zero Export* feature ensures that no excess energy is fed back into the public grid. Instead, the system continuously monitors real‑time power consumption and dynamically adjusts output so that the net export remains as close to **0 watts** as possible.
+
+The power measurement can come from various smart‑meter devices — for example, a Tasmota‑based sensor installed directly at the electricity meter. ([Hichi SML interface](https://www.amazon.de/Wifi-Lesekopf-Hichi-EHZ-Tasmota/dp/B0D7S4L1QG/ref=sr_1_3))
+Such devices expose real‑time consumption data via HTTP, making them ideal for Zero Export control.
+
+### Parameters
+settings.h
+
+| Parameter | Description |
+|----------|-------------|
+| `ZeroExport` | Enables the Zero Export mode (default commented out). |
+| `UPDATE_SMETER` | Interval in seconds for polling the smart meter. |
+| `SmartMeterOffset` | Optional offset to compensate for baseline load or measurement deviations. |
+| `SmartMeterEndpoint` | HTTP endpoint of the smart meter (e.g., Tasmota device). |
+| `SmartMeterKey` | JSON field name containing the current power reading. |
+
+
 ## PCB
 
 ![Board](/img/board.jpg)

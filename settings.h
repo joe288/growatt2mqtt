@@ -44,4 +44,4 @@ static const IPAddress secondaryDNS(8, 8, 4, 4); //optional
 #define UPDATE_SMETER 5                     //Update smart meter data every 5 seconds
 static const int SmartMeterOffset = 0;            // Watt offset to apply to smart meter reading (to account for baseline consumption, set to 0 if not needed)
 static const char* SmartMeterEndpoint = "http://192.168.X.XXX/cm?cmnd=STATUS%2010";
-static const char* SmartMeterKey = "Power";  // JSON key to read from smart meter response (configurable in settings.h or settings.cpp)
+static const char* SmartMeterKey = "Power";        // JSON key to read from smart meter response
