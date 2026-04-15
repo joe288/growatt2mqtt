@@ -36,14 +36,14 @@ class growattIF {
     {
       int enable, safetyfuncen, maxoutputactivepp, maxoutputreactivepp, modul, TrakerModel;
       float  maxpower, voltnormal, startvoltage, gridvoltlowlimit, gridvolthighlimit, gridfreqlowlimit, gridfreqhighlimit, gridvoltlowconnlimit, gridvolthighconnlimit, gridfreqlowconnlimit, gridfreqhighconnlimit;
-      char firmware[6], controlfirmware[6];
-      char serial[10];
+      char firmware[7], controlfirmware[7];
+      char serial[11];
     };
 
     struct modbus_holding_registers modbussettings;
   public:
     growattIF(int _PinMAX485_RE_NEG, int _PinMAX485_DE, int _PinMAX485_RX, int _PinMAX485_TX);
-    void initGrowatt();
+    void initGrowatt(SoftwareSerial* sharedSerial = nullptr);
     uint8_t writeRegister(uint16_t reg, uint16_t message);
     uint16_t readRegister(uint16_t reg);
     uint8_t ReadInputRegisters(char* json);

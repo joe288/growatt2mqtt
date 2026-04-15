@@ -45,3 +45,7 @@ static const IPAddress secondaryDNS(8, 8, 4, 4); //optional
 static const int SmartMeterOffset = 0;            // Watt offset to apply to smart meter reading (to account for baseline consumption, set to 0 if not needed)
 static const char* SmartMeterEndpoint = "http://192.168.X.XXX/cm?cmnd=STATUS%2010";
 static const char* SmartMeterKey = "Power";        // JSON key to read from smart meter response
+static const int maxPowerDefault = 500;            // Default max power for zero export (in watts)
+
+#define DALY_BMS 1
+#define UPDATE_DALY     1         // 1: Daly BMS is read every second

@@ -44,13 +44,15 @@ void zeroExport::handle(char dataJson[1024], char settingsJson[1024], uint8_t *o
     doc.clear();
     err = deserializeJson(doc, settingsJson);
     maxpower = doc["maxpower"].as<float>();
-    
+    float maxOutput = (maxPowerDefault / maxpower) * 100.0f;
+
     float outPercent = 0.0f;
     if (maxpower > 0.0f) {
       outPercent = ((solarpower + (float)smartmeter - (float)SmartMeterOffset) / maxpower) * 100.0f;
     }
     if (outPercent < 0.0f) outPercent = 0.0f;
     if (outPercent > 100.0f) outPercent = 100.0f;
+    if (outPercent > maxOutput) outPercent = maxOutput;
     *output = (uint8_t)(outPercent + 0.5f);
 
     #ifdef DEBUG_SERIAL

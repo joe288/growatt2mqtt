@@ -175,6 +175,157 @@ void publishHADiscovery(PubSubClient &mqtt, const char* baseClientID, const char
   sprintf(payload, "{\"name\":\"%s Warning Bit Code\",\"state_topic\":\"%s/data\",\"availability_topic\":\"%s/connection\",\"unique_id\":\"%s_warningbitcode\",\"entity_category\":\"diagnostic\",\"value_template\":\"{{ value_json.warningbitcode }}\",\"device\":{\"identifiers\":[\"%s\"],\"name\":\"%s\",\"model\":\"Growatt Inverter\",\"sw_version\":\"%s\"}}", baseClientID, topicRoot, topicRoot, uniqueClientID, uniqueClientID, baseClientID, buildversion);
   mqtt.publish(discTopic, payload, true);
   delay(50);
+
+#ifdef DALY_BMS
+  // Daly BMS: Voltage
+  sprintf(discTopic, "homeassistant/sensor/%s_daly_voltage/config", uniqueClientID);
+  sprintf(payload, "{\"name\":\"%s Daly Voltage\",\"state_topic\":\"%s/bms\",\"availability_topic\":\"%s/connection\",\"unique_id\":\"%s_daly_voltage\",\"unit_of_measurement\":\"V\",\"device_class\":\"voltage\",\"state_class\":\"measurement\",\"value_template\":\"{{ value_json.Voltage }}\",\"device\":{\"identifiers\":[\"%s_daly\"],\"name\":\"%s Daly BMS\",\"model\":\"Daly BMS\",\"sw_version\":\"%s\"}}", baseClientID, topicRoot, topicRoot, uniqueClientID, uniqueClientID, baseClientID, buildversion);
+  mqtt.publish(discTopic, payload, true);
+  delay(50);
+
+  // Daly BMS: Current
+  sprintf(discTopic, "homeassistant/sensor/%s_daly_current/config", uniqueClientID);
+  sprintf(payload, "{\"name\":\"%s Daly Current\",\"state_topic\":\"%s/bms\",\"availability_topic\":\"%s/connection\",\"unique_id\":\"%s_daly_current\",\"unit_of_measurement\":\"A\",\"state_class\":\"measurement\",\"value_template\":\"{{ value_json.Current }}\",\"device\":{\"identifiers\":[\"%s_daly\"],\"name\":\"%s Daly BMS\",\"model\":\"Daly BMS\",\"sw_version\":\"%s\"}}", baseClientID, topicRoot, topicRoot, uniqueClientID, uniqueClientID, baseClientID, buildversion);
+  mqtt.publish(discTopic, payload, true);
+  delay(50);
+
+  // Daly BMS: Power
+  sprintf(discTopic, "homeassistant/sensor/%s_daly_power/config", uniqueClientID);
+  sprintf(payload, "{\"name\":\"%s Daly Power\",\"state_topic\":\"%s/bms\",\"availability_topic\":\"%s/connection\",\"unique_id\":\"%s_daly_power\",\"unit_of_measurement\":\"W\",\"device_class\":\"power\",\"state_class\":\"measurement\",\"value_template\":\"{{ value_json.Power }}\",\"device\":{\"identifiers\":[\"%s_daly\"],\"name\":\"%s Daly BMS\",\"model\":\"Daly BMS\",\"sw_version\":\"%s\"}}", baseClientID, topicRoot, topicRoot, uniqueClientID, uniqueClientID, baseClientID, buildversion);
+  mqtt.publish(discTopic, payload, true);
+  delay(50);
+
+  // Daly BMS: SOC
+  sprintf(discTopic, "homeassistant/sensor/%s_daly_soc/config", uniqueClientID);
+  sprintf(payload,
+  "{\"name\":\"%s Daly SOC\","
+  "\"state_topic\":\"%s/bms\","
+  "\"availability_topic\":\"%s/connection\","
+  "\"unique_id\":\"%s_daly_soc\","
+  "\"unit_of_measurement\":\"%%\","
+  "\"state_class\":\"measurement\","
+  "\"value_template\":\"{{ value_json.SOC | float(0) }}\","
+  "\"device\":{"
+    "\"identifiers\":[\"%s_daly\"],"
+    "\"name\":\"%s Daly BMS\","
+    "\"model\":\"Daly BMS\","
+    "\"sw_version\":\"%s\""
+  "}"
+  "}",
+  baseClientID,
+  topicRoot,
+  topicRoot,
+  uniqueClientID,
+  uniqueClientID,
+  baseClientID,
+  buildversion
+);
+  mqtt.publish(discTopic, payload, true);
+  delay(50);
+
+  // Daly BMS: Remaining Ah
+  sprintf(discTopic, "homeassistant/sensor/%s_daly_remaining_ah/config", uniqueClientID);
+  sprintf(payload, "{\"name\":\"%s Daly Remaining Ah\",\"state_topic\":\"%s/bms\",\"availability_topic\":\"%s/connection\",\"unique_id\":\"%s_daly_remaining_ah\",\"unit_of_measurement\":\"Ah\",\"state_class\":\"measurement\",\"value_template\":\"{{ value_json.Remaining_Ah }}\",\"device\":{\"identifiers\":[\"%s_daly\"],\"name\":\"%s Daly BMS\",\"model\":\"Daly BMS\",\"sw_version\":\"%s\"}}", baseClientID, topicRoot, topicRoot, uniqueClientID, uniqueClientID, baseClientID, buildversion);
+  mqtt.publish(discTopic, payload, true);
+  delay(50);
+
+  // Daly BMS: Remaining kWh
+  sprintf(discTopic, "homeassistant/sensor/%s_daly_remaining_kwh/config", uniqueClientID);
+  sprintf(payload, "{\"name\":\"%s Daly Remaining kWh\",\"state_topic\":\"%s/bms\",\"availability_topic\":\"%s/connection\",\"unique_id\":\"%s_daly_remaining_kwh\",\"unit_of_measurement\":\"kWh\",\"state_class\":\"measurement\",\"value_template\":\"{{ value_json.Remaining_kWh }}\",\"device\":{\"identifiers\":[\"%s_daly\"],\"name\":\"%s Daly BMS\",\"model\":\"Daly BMS\",\"sw_version\":\"%s\"}}", baseClientID, topicRoot, topicRoot, uniqueClientID, uniqueClientID, baseClientID, buildversion);
+  mqtt.publish(discTopic, payload, true);
+  delay(50);
+
+  // Daly BMS: Cycles
+  sprintf(discTopic, "homeassistant/sensor/%s_daly_cycles/config", uniqueClientID);
+  sprintf(payload, "{\"name\":\"%s Daly Cycles\",\"state_topic\":\"%s/bms\",\"availability_topic\":\"%s/connection\",\"unique_id\":\"%s_daly_cycles\",\"entity_category\":\"diagnostic\",\"value_template\":\"{{ value_json.Cycles }}\",\"device\":{\"identifiers\":[\"%s_daly\"],\"name\":\"%s Daly BMS\",\"model\":\"Daly BMS\",\"sw_version\":\"%s\"}}", baseClientID, topicRoot, topicRoot, uniqueClientID, uniqueClientID, baseClientID, buildversion);
+  mqtt.publish(discTopic, payload, true);
+  delay(50);
+
+  // Daly BMS: BMS Temp
+  sprintf(discTopic, "homeassistant/sensor/%s_daly_bms_temp/config", uniqueClientID);
+  sprintf(payload, "{\"name\":\"%s Daly BMS Temp\",\"state_topic\":\"%s/bms\",\"availability_topic\":\"%s/connection\",\"unique_id\":\"%s_daly_bms_temp\",\"unit_of_measurement\":\"°C\",\"device_class\":\"temperature\",\"state_class\":\"measurement\",\"value_template\":\"{{ value_json.BMS_Temp }}\",\"device\":{\"identifiers\":[\"%s_daly\"],\"name\":\"%s Daly BMS\",\"model\":\"Daly BMS\",\"sw_version\":\"%s\"}}", baseClientID, topicRoot, topicRoot, uniqueClientID, uniqueClientID, baseClientID, buildversion);
+  mqtt.publish(discTopic, payload, true);
+  delay(50);
+
+  // Daly BMS: Cell Temp
+  sprintf(discTopic, "homeassistant/sensor/%s_daly_cell_temp/config", uniqueClientID);
+  sprintf(payload, "{\"name\":\"%s Daly Cell Temp\",\"state_topic\":\"%s/bms\",\"availability_topic\":\"%s/connection\",\"unique_id\":\"%s_daly_cell_temp\",\"unit_of_measurement\":\"°C\",\"device_class\":\"temperature\",\"state_class\":\"measurement\",\"value_template\":\"{{ value_json.Cell_Temp }}\",\"device\":{\"identifiers\":[\"%s_daly\"],\"name\":\"%s Daly BMS\",\"model\":\"Daly BMS\",\"sw_version\":\"%s\"}}", baseClientID, topicRoot, topicRoot, uniqueClientID, uniqueClientID, baseClientID, buildversion);
+  mqtt.publish(discTopic, payload, true);
+  delay(50);
+
+  // Daly BMS: High Cell Nr
+  sprintf(discTopic, "homeassistant/sensor/%s_daly_high_cell_nr/config", uniqueClientID);
+  sprintf(payload, "{\"name\":\"%s Daly High Cell Nr\",\"state_topic\":\"%s/bms\",\"availability_topic\":\"%s/connection\",\"unique_id\":\"%s_daly_high_cell_nr\",\"entity_category\":\"diagnostic\",\"value_template\":\"{{ value_json.High_CellNr }}\",\"device\":{\"identifiers\":[\"%s_daly\"],\"name\":\"%s Daly BMS\",\"model\":\"Daly BMS\",\"sw_version\":\"%s\"}}", baseClientID, topicRoot, topicRoot, uniqueClientID, uniqueClientID, baseClientID, buildversion);
+  mqtt.publish(discTopic, payload, true);
+  delay(50);
+
+  // Daly BMS: High Cell V
+  sprintf(discTopic, "homeassistant/sensor/%s_daly_high_cell_v/config", uniqueClientID);
+  sprintf(payload, "{\"name\":\"%s Daly High Cell V\",\"state_topic\":\"%s/bms\",\"availability_topic\":\"%s/connection\",\"unique_id\":\"%s_daly_high_cell_v\",\"unit_of_measurement\":\"V\",\"state_class\":\"measurement\",\"value_template\":\"{{ value_json.High_CellV }}\",\"device\":{\"identifiers\":[\"%s_daly\"],\"name\":\"%s Daly BMS\",\"model\":\"Daly BMS\",\"sw_version\":\"%s\"}}", baseClientID, topicRoot, topicRoot, uniqueClientID, uniqueClientID, baseClientID, buildversion);
+  mqtt.publish(discTopic, payload, true);
+  delay(50);
+
+  // Daly BMS: Low Cell Nr
+  sprintf(discTopic, "homeassistant/sensor/%s_daly_low_cell_nr/config", uniqueClientID);
+  sprintf(payload, "{\"name\":\"%s Daly Low Cell Nr\",\"state_topic\":\"%s/bms\",\"availability_topic\":\"%s/connection\",\"unique_id\":\"%s_daly_low_cell_nr\",\"entity_category\":\"diagnostic\",\"value_template\":\"{{ value_json.Low_CellNr }}\",\"device\":{\"identifiers\":[\"%s_daly\"],\"name\":\"%s Daly BMS\",\"model\":\"Daly BMS\",\"sw_version\":\"%s\"}}", baseClientID, topicRoot, topicRoot, uniqueClientID, uniqueClientID, baseClientID, buildversion);
+  mqtt.publish(discTopic, payload, true);
+  delay(50);
+
+  // Daly BMS: Low Cell V
+  sprintf(discTopic, "homeassistant/sensor/%s_daly_low_cell_v/config", uniqueClientID);
+  sprintf(payload, "{\"name\":\"%s Daly Low Cell V\",\"state_topic\":\"%s/bms\",\"availability_topic\":\"%s/connection\",\"unique_id\":\"%s_daly_low_cell_v\",\"unit_of_measurement\":\"V\",\"state_class\":\"measurement\",\"value_template\":\"{{ value_json.Low_CellV }}\",\"device\":{\"identifiers\":[\"%s_daly\"],\"name\":\"%s Daly BMS\",\"model\":\"Daly BMS\",\"sw_version\":\"%s\"}}", baseClientID, topicRoot, topicRoot, uniqueClientID, uniqueClientID, baseClientID, buildversion);
+  mqtt.publish(discTopic, payload, true);
+  delay(50);
+
+  // Daly BMS: Cell Diff
+  sprintf(discTopic, "homeassistant/sensor/%s_daly_cell_diff/config", uniqueClientID);
+  sprintf(payload, "{\"name\":\"%s Daly Cell Diff\",\"state_topic\":\"%s/bms\",\"availability_topic\":\"%s/connection\",\"unique_id\":\"%s_daly_cell_diff\",\"unit_of_measurement\":\"mV\",\"state_class\":\"measurement\",\"entity_category\":\"diagnostic\",\"value_template\":\"{{ value_json.Cell_Diff }}\",\"device\":{\"identifiers\":[\"%s_daly\"],\"name\":\"%s Daly BMS\",\"model\":\"Daly BMS\",\"sw_version\":\"%s\"}}", baseClientID, topicRoot, topicRoot, uniqueClientID, uniqueClientID, baseClientID, buildversion);
+  mqtt.publish(discTopic, payload, true);
+  delay(50);
+
+  // Daly BMS: Discharge FET
+  sprintf(discTopic, "homeassistant/sensor/%s_daly_discharge_fet/config", uniqueClientID);
+  sprintf(payload, "{\"name\":\"%s Daly Discharge FET\",\"state_topic\":\"%s/bms\",\"availability_topic\":\"%s/connection\",\"unique_id\":\"%s_daly_discharge_fet\",\"entity_category\":\"diagnostic\",\"value_template\":\"{{ value_json.DischargeFET }}\",\"device\":{\"identifiers\":[\"%s_daly\"],\"name\":\"%s Daly BMS\",\"model\":\"Daly BMS\",\"sw_version\":\"%s\"}}", baseClientID, topicRoot, topicRoot, uniqueClientID, uniqueClientID, baseClientID, buildversion);
+  mqtt.publish(discTopic, payload, true);
+  delay(50);
+
+  // Daly BMS: Charge FET
+  sprintf(discTopic, "homeassistant/sensor/%s_daly_charge_fet/config", uniqueClientID);
+  sprintf(payload, "{\"name\":\"%s Daly Charge FET\",\"state_topic\":\"%s/bms\",\"availability_topic\":\"%s/connection\",\"unique_id\":\"%s_daly_charge_fet\",\"entity_category\":\"diagnostic\",\"value_template\":\"{{ value_json.ChargeFET }}\",\"device\":{\"identifiers\":[\"%s_daly\"],\"name\":\"%s Daly BMS\",\"model\":\"Daly BMS\",\"sw_version\":\"%s\"}}", baseClientID, topicRoot, topicRoot, uniqueClientID, uniqueClientID, baseClientID, buildversion);
+  mqtt.publish(discTopic, payload, true);
+  delay(50);
+
+  // Daly BMS: Status
+  sprintf(discTopic, "homeassistant/sensor/%s_daly_status/config", uniqueClientID);
+  sprintf(payload, "{\"name\":\"%s Daly Status\",\"state_topic\":\"%s/bms\",\"availability_topic\":\"%s/connection\",\"unique_id\":\"%s_daly_status\",\"entity_category\":\"diagnostic\",\"value_template\":\"{{ value_json.Status }}\",\"device\":{\"identifiers\":[\"%s_daly\"],\"name\":\"%s Daly BMS\",\"model\":\"Daly BMS\",\"sw_version\":\"%s\"}}", baseClientID, topicRoot, topicRoot, uniqueClientID, uniqueClientID, baseClientID, buildversion);
+  mqtt.publish(discTopic, payload, true);
+  delay(50);
+
+  // Daly BMS: Cells
+  sprintf(discTopic, "homeassistant/sensor/%s_daly_cells/config", uniqueClientID);
+  sprintf(payload, "{\"name\":\"%s Daly Cells\",\"state_topic\":\"%s/bms\",\"availability_topic\":\"%s/connection\",\"unique_id\":\"%s_daly_cells\",\"entity_category\":\"diagnostic\",\"value_template\":\"{{ value_json.Cells }}\",\"device\":{\"identifiers\":[\"%s_daly\"],\"name\":\"%s Daly BMS\",\"model\":\"Daly BMS\",\"sw_version\":\"%s\"}}", baseClientID, topicRoot, topicRoot, uniqueClientID, uniqueClientID, baseClientID, buildversion);
+  mqtt.publish(discTopic, payload, true);
+  delay(50);
+
+  // Daly BMS: Heartbeat
+  sprintf(discTopic, "homeassistant/sensor/%s_daly_heartbeat/config", uniqueClientID);
+  sprintf(payload, "{\"name\":\"%s Daly Heartbeat\",\"state_topic\":\"%s/bms\",\"availability_topic\":\"%s/connection\",\"unique_id\":\"%s_daly_heartbeat\",\"entity_category\":\"diagnostic\",\"value_template\":\"{{ value_json.Heartbeat }}\",\"device\":{\"identifiers\":[\"%s_daly\"],\"name\":\"%s Daly BMS\",\"model\":\"Daly BMS\",\"sw_version\":\"%s\"}}", baseClientID, topicRoot, topicRoot, uniqueClientID, uniqueClientID, baseClientID, buildversion);
+  mqtt.publish(discTopic, payload, true);
+  delay(50);
+
+  // Daly BMS: Balance Active
+  sprintf(discTopic, "homeassistant/sensor/%s_daly_balance_active/config", uniqueClientID);
+  sprintf(payload, "{\"name\":\"%s Daly Balance Active\",\"state_topic\":\"%s/bms\",\"availability_topic\":\"%s/connection\",\"unique_id\":\"%s_daly_balance_active\",\"entity_category\":\"diagnostic\",\"value_template\":\"{{ value_json.Balance_Active }}\",\"device\":{\"identifiers\":[\"%s_daly\"],\"name\":\"%s Daly BMS\",\"model\":\"Daly BMS\",\"sw_version\":\"%s\"}}", baseClientID, topicRoot, topicRoot, uniqueClientID, uniqueClientID, baseClientID, buildversion);
+  mqtt.publish(discTopic, payload, true);
+  delay(50);
+
+  // Daly BMS: Fail Codes
+  sprintf(discTopic, "homeassistant/sensor/%s_daly_fail_codes/config", uniqueClientID);
+  sprintf(payload, "{\"name\":\"%s Daly Fail Codes\",\"state_topic\":\"%s/bms\",\"availability_topic\":\"%s/connection\",\"unique_id\":\"%s_daly_fail_codes\",\"entity_category\":\"diagnostic\",\"value_template\":\"{{ value_json.Fail_Codes }}\",\"device\":{\"identifiers\":[\"%s_daly\"],\"name\":\"%s Daly BMS\",\"model\":\"Daly BMS\",\"sw_version\":\"%s\"}}", baseClientID, topicRoot, topicRoot, uniqueClientID, uniqueClientID, baseClientID, buildversion);
+  mqtt.publish(discTopic, payload, true);
+  delay(50);
+#endif
+
   // Diagnostics: RSSI
   sprintf(discTopic, "homeassistant/sensor/%s_rssi/config", uniqueClientID);
   sprintf(payload, "{\"name\":\"%s RSSI\",\"state_topic\":\"%s/status\",\"availability_topic\":\"%s/connection\",\"unique_id\":\"%s_rssi\",\"unit_of_measurement\":\"dBm\",\"state_class\":\"measurement\",\"entity_category\":\"diagnostic\",\"value_template\":\"{{ value_json.rssi }}\",\"device\":{\"identifiers\":[\"%s\"],\"name\":\"%s\",\"model\":\"Growatt Inverter\",\"sw_version\":\"%s\"}}", baseClientID, topicRoot, topicRoot, uniqueClientID, uniqueClientID, baseClientID, buildversion);

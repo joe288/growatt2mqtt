@@ -23,14 +23,21 @@
 #include "settings.h"
 #include "growattInterface.h"
 #include "mqtt_discovery.h"
+#include <SoftwareSerial.h>
 
-os_timer_t myTimer;
 ESP8266WebServer server(80);
 WiFiClient espClient;
 PubSubClient mqtt(mqtt_server, 1883, 0, espClient);
 
 CRGB leds[NUM_LEDS];
+
+SoftwareSerial sharedRS485(MAX485_RX, MAX485_TX);
 growattIF growattInterface(MAX485_RE_NEG, MAX485_DE, MAX485_RX, MAX485_TX);
+
+#ifdef DALY_BMS
+#include "daly.h"
+DalyBms  dalyInterface(&sharedRS485, MAX485_DE, MAX485_RE_NEG);
+#endif
 
 #ifdef ZeroExport
 #include "zeroExport.h"
@@ -39,7 +46,25 @@ zeroExport zeroExportReader(SmartMeterEndpoint, UPDATE_SMETER);
 
 char settingsJson[1024];
 char dataJson[1024];
+unsigned long lastModbusMillis = 0;
+unsigned long lastStatusMillis = 0;
+#ifdef DALY_BMS
+unsigned long lastDalyMillis = 0;
+#endif
 uint8_t outputPercent = 100;
+
+void writeLog(const char *format, ...)
+{
+  char msg[100];
+  va_list args;
+
+  va_start(args, format);
+  vsnprintf(msg, sizeof(msg), format, args); // do check return value
+  va_end(args);
+
+  // write msg to the log
+  Serial.println(msg);
+}
 
 void ReadInputRegisters() {
   char topic[80];
@@ -123,35 +148,6 @@ void ReadHoldingRegisters() {
 }
 
 // This is the 1 second timer callback function
-void timerCallback(void *pArg) {
-  seconds++;
-
-  // Query the modbus device
-  if (seconds % UPDATE_MODBUS == 0) {
-    //ReadInputRegisters();
-    if (!holdingregisters) {
-      // Read the holding registers
-      ReadHoldingRegisters();
-    } else {
-      // Read the input registers
-      ReadInputRegisters();
-    }
-  }
-
-  // Send RSSI and uptime status
-  if (seconds % UPDATE_STATUS == 0) {
-    // Send MQTT update
-    if (mqtt_server != "") {
-      char topic[80];
-      char value[300];
-      sprintf(value, "{\"rssi\": %d, \"uptime\": %d, \"ssid\": \"%s\", \"ip\": \"%d.%d.%d.%d\", \"clientid\":\"%s\", \"version\":\"%s\"}", WiFi.RSSI(), uptime, WiFi.SSID().c_str(), WiFi.localIP()[0], WiFi.localIP()[1], WiFi.localIP()[2], WiFi.localIP()[3], newclientid, buildversion);
-      sprintf(topic, "%s/%s", topicRoot, "status");
-      mqtt.publish(topic, value);
-      Serial.println(F("MQTT status sent"));
-    }
-  }
-}
-
 // MQTT reconnect logic
 void reconnect() {
   //String mytopic;
@@ -186,6 +182,81 @@ void reconnect() {
     }
   }
 }
+
+#ifdef DALY_BMS
+void dalyCallback() {
+  // Serial.println("Daly BMS callback called, sending MQTT message...");
+  if (mqtt.connected()) {
+    char topic[80];
+    char json[1024];
+    sprintf(json,
+      "{"
+      "\"Voltage\":%.1f,"
+      "\"Current\":%.1f,"
+      "\"Power\":%.1f,"
+      "\"SOC\":%.1f,"
+      "\"Remaining_Ah\":%.1f,"
+      "\"Remaining_kWh\":%.3f,"
+      "\"Cycles\":%d,"
+      "\"BMS_Temp\":%d,"
+      "\"Cell_Temp\":%d,"
+      "\"cell_hVt\":%.3f,"
+      "\"cell_lVt\":%.3f,"
+      "\"cell_hVt2\":%.3f,"
+      "\"cell_lVt2\":%.3f,"
+      "\"pack_hVt\":%.1f,"
+      "\"pack_lVt\":%.1f,"
+      "\"pack_hVt2\":%.1f,"
+      "\"pack_lVt2\":%.1f,"
+      "\"High_CellNr\":%d,"
+      "\"High_CellV\":%.3f,"
+      "\"Low_CellNr\":%d,"
+      "\"Low_CellV\":%.3f,"
+      "\"Cell_Diff\":%d,"
+      "\"DischargeFET\":%s,"
+      "\"ChargeFET\":%s,"
+      "\"Status\":\"%s\","
+      "\"Cells\":%d,"
+      "\"Heartbeat\":%d,"
+      "\"Balance_Active\":%s,"
+      "\"Fail_Codes\":\"%s\""
+      "}",
+      dalyInterface.get.packVoltage,
+      dalyInterface.get.packCurrent,
+      dalyInterface.get.packCurrent * dalyInterface.get.packVoltage,
+      dalyInterface.get.packSOC,
+      dalyInterface.get.resCapacityAh,
+      (dalyInterface.get.resCapacityAh * dalyInterface.get.packVoltage) / 1000,
+      dalyInterface.get.bmsCycles,
+      dalyInterface.get.tempAverage,
+      dalyInterface.get.cellTemperature[0],
+      dalyInterface.get.maxCellThreshold1 * 0.001,
+      dalyInterface.get.minCellThreshold1 * 0.001,
+      dalyInterface.get.maxCellThreshold2 * 0.001,
+      dalyInterface.get.minCellThreshold2 * 0.001,
+      dalyInterface.get.maxPackThreshold1 * 0.1,
+      dalyInterface.get.minPackThreshold1 * 0.1,
+      dalyInterface.get.maxPackThreshold2 * 0.1,
+      dalyInterface.get.minPackThreshold2 * 0.1,
+      dalyInterface.get.maxCellVNum,
+      dalyInterface.get.maxCellmV * 0.001,
+      dalyInterface.get.minCellVNum,
+      dalyInterface.get.minCellmV * 0.001,
+      dalyInterface.get.cellDiff,
+      dalyInterface.get.disChargeFetState ? "true" : "false",
+      dalyInterface.get.chargeFetState    ? "true" : "false",
+      dalyInterface.get.chargeDischargeStatus,
+      dalyInterface.get.numberOfCells,
+      dalyInterface.get.bmsHeartBeat,
+      dalyInterface.get.cellBalanceActive  ? "true" : "false",
+      dalyInterface.failCodeArr.c_str()
+    );
+    sprintf(topic, "%s/bms", topicRoot);
+    mqtt.publish(topic, json);
+    Serial.println("BMS MQTT sent");
+  }
+}
+#endif
 
 void setup() {
   FastLED.addLeds<LED_TYPE, RGBLED_PIN, COLOR_ORDER>(leds, NUM_LEDS).setCorrection( TypicalSMD5050 );
@@ -234,12 +305,15 @@ void setup() {
   Serial.println(WiFi.RSSI());
 
   // Set up the Modbus line
-  growattInterface.initGrowatt();
-  Serial.println("Modbus connection is set up");
+  sharedRS485.begin(9600);  // Beide Protokolle laufen auf 9600 Baud ✓
+  growattInterface.initGrowatt(&sharedRS485);
 
-  // Create the 1 second timer interrupt
-  os_timer_setfn(&myTimer, timerCallback, NULL);
-  os_timer_arm(&myTimer, 1000, true);
+  #ifdef DALY_BMS
+  dalyInterface.Init();
+  dalyInterface.callback(dalyCallback);
+  #endif
+
+  Serial.println("Modbus connection is set up");
 
   server.on("/", []() {                       // Dummy page
     server.send(200, "text/plain", "Growatt Solar Inverter to MQTT Gateway");
@@ -268,12 +342,10 @@ void setup() {
   // ArduinoOTA.setPassword((const char *)"123");
 
   ArduinoOTA.onStart([]() {
-    os_timer_disarm(&myTimer);
     Serial.println("Start");
   });
   ArduinoOTA.onEnd([]() {
     Serial.println("\nEnd");
-    os_timer_arm(&myTimer, 1000, true);
   });
   ArduinoOTA.onProgress([](unsigned int progress, unsigned int total) {
     Serial.printf("Progress: %u%%\r", (progress / (total / 100)));
@@ -433,6 +505,35 @@ void loop() {
     }
     mqtt.loop();
   }
+
+  unsigned long now = millis();
+  if (now - lastModbusMillis >= (unsigned long)UPDATE_MODBUS * 1000UL) {
+    lastModbusMillis = now;
+    if (!holdingregisters) {
+      ReadHoldingRegisters();
+    } else {
+      ReadInputRegisters();
+    }
+  }
+
+  if (now - lastStatusMillis >= (unsigned long)UPDATE_STATUS * 1000UL) {
+    lastStatusMillis = now;
+    if (mqtt_server != "") {
+      char topic[80];
+      char value[300];
+      sprintf(value, "{\"rssi\": %d, \"uptime\": %d, \"ssid\": \"%s\", \"ip\": \"%d.%d.%d.%d\", \"clientid\":\"%s\", \"version\":\"%s\"}", WiFi.RSSI(), uptime, WiFi.SSID().c_str(), WiFi.localIP()[0], WiFi.localIP()[1], WiFi.localIP()[2], WiFi.localIP()[3], newclientid, buildversion);
+      sprintf(topic, "%s/%s", topicRoot, "status");
+      mqtt.publish(topic, value);
+      Serial.println(F("MQTT status sent"));
+    }
+  }
+
+#ifdef DALY_BMS
+  if (now - lastDalyMillis >= (unsigned long)UPDATE_DALY * 1000UL) {
+    lastDalyMillis = now;
+    dalyInterface.loop();
+  }
+#endif
 
   // Uptime calculation
   if (millis() - lastTick >= 60000) {

@@ -13,9 +13,13 @@ growattIF::growattIF(int _PinMAX485_RE_NEG, int _PinMAX485_DE, int _PinMAX485_RX
   digitalWrite(PinMAX485_DE, 0);
 }
 
-void growattIF::initGrowatt() {
-  serial = new SoftwareSerial (PinMAX485_RX, PinMAX485_TX, false); //RX, TX
-  serial->begin(MODBUS_RATE);
+void growattIF::initGrowatt(SoftwareSerial* sharedSerial) {
+  if (sharedSerial != nullptr) {
+    serial = sharedSerial;          // externe Instanz verwenden
+  } else {
+    serial = new SoftwareSerial(PinMAX485_RX, PinMAX485_TX, false);
+    serial->begin(MODBUS_RATE);     // wie bisher
+  }
   growattInterface.begin(SLAVE_ID , *serial);
 
   static growattIF* obj = this;                               //pointer to the object
@@ -51,9 +55,7 @@ void growattIF::postTransmission() {
 uint8_t growattIF::ReadInputRegisters(char* json) {
   uint8_t result;
 
-  ESP.wdtDisable();
   result = growattInterface.readInputRegisters(setcounter * 64, 64);
-  ESP.wdtEnable(1);
 
   if (result == growattInterface.ku8MBSuccess)   {
     if (setcounter == 0) {    //register 0-63
@@ -182,47 +184,47 @@ uint8_t growattIF::ReadInputRegisters(char* json) {
     return result;
   }
   // Generate the modbus MQTT message
-  sprintf(json, "{", json);
-  sprintf(json, "%s \"status\":%d,", json, modbusdata.status);
-  sprintf(json, "%s \"solarpower\":%.1f,", json, modbusdata.solarpower);
-  sprintf(json, "%s \"pv1voltage\":%.1f,", json, modbusdata.pv1voltage);
-  sprintf(json, "%s \"pv1current\":%.1f,", json, modbusdata.pv1current);
-  sprintf(json, "%s \"pv1power\":%.1f,", json, modbusdata.pv1power);
-  sprintf(json, "%s \"pv2voltage\":%.1f,", json, modbusdata.pv2voltage);
-  sprintf(json, "%s \"pv2current\":%.1f,", json, modbusdata.pv2current);
-  sprintf(json, "%s \"pv2power\":%.1f,", json, modbusdata.pv2power);
+  char *p = json;
+  *p = '\0';
+  p += sprintf(p, "{");
+  p += sprintf(p, " \"status\":%d,", modbusdata.status);
+  p += sprintf(p, " \"solarpower\":%.1f,", modbusdata.solarpower);
+  p += sprintf(p, " \"pv1voltage\":%.1f,", modbusdata.pv1voltage);
+  p += sprintf(p, " \"pv1current\":%.1f,", modbusdata.pv1current);
+  p += sprintf(p, " \"pv1power\":%.1f,", modbusdata.pv1power);
+  p += sprintf(p, " \"pv2voltage\":%.1f,", modbusdata.pv2voltage);
+  p += sprintf(p, " \"pv2current\":%.1f,", modbusdata.pv2current);
+  p += sprintf(p, " \"pv2power\":%.1f,", modbusdata.pv2power);
 
-  sprintf(json, "%s \"outputpower\":%.1f,", json, modbusdata.outputpower);
-  sprintf(json, "%s \"gridfrequency\":%.2f,", json, modbusdata.gridfrequency);
-  sprintf(json, "%s \"gridvoltage\":%.1f,", json, modbusdata.gridvoltage);
+  p += sprintf(p, " \"outputpower\":%.1f,", modbusdata.outputpower);
+  p += sprintf(p, " \"gridfrequency\":%.2f,", modbusdata.gridfrequency);
+  p += sprintf(p, " \"gridvoltage\":%.1f,", modbusdata.gridvoltage);
 
-  sprintf(json, "%s \"energytoday\":%.1f,", json, modbusdata.energytoday);
-  sprintf(json, "%s \"energytotal\":%.1f,", json, modbusdata.energytotal);
-  sprintf(json, "%s \"totalworktime\":%.1f,", json, modbusdata.totalworktime);
-  sprintf(json, "%s \"pv1energytoday\":%.1f,", json, modbusdata.pv1energytoday);
-  sprintf(json, "%s \"pv1energytotal\":%.1f,", json, modbusdata.pv1energytotal);
-  sprintf(json, "%s \"pv2energytoday\":%.1f,", json, modbusdata.pv2energytoday);
-  sprintf(json, "%s \"pv2energytotal\":%.1f,", json, modbusdata.pv2energytotal);
-  sprintf(json, "%s \"opfullpower\":%.1f,", json, modbusdata.opfullpower);
+  p += sprintf(p, " \"energytoday\":%.1f,", modbusdata.energytoday);
+  p += sprintf(p, " \"energytotal\":%.1f,", modbusdata.energytotal);
+  p += sprintf(p, " \"totalworktime\":%.1f,", modbusdata.totalworktime);
+  p += sprintf(p, " \"pv1energytoday\":%.1f,", modbusdata.pv1energytoday);
+  p += sprintf(p, " \"pv1energytotal\":%.1f,", modbusdata.pv1energytotal);
+  p += sprintf(p, " \"pv2energytoday\":%.1f,", modbusdata.pv2energytoday);
+  p += sprintf(p, " \"pv2energytotal\":%.1f,", modbusdata.pv2energytotal);
+  p += sprintf(p, " \"opfullpower\":%.1f,", modbusdata.opfullpower);
 
-  sprintf(json, "%s \"tempinverter\":%.1f,", json, modbusdata.tempinverter);
-  sprintf(json, "%s \"tempipm\":%.1f,", json, modbusdata.tempipm);
-  sprintf(json, "%s \"tempboost\":%.1f,", json, modbusdata.tempboost);
+  p += sprintf(p, " \"tempinverter\":%.1f,", modbusdata.tempinverter);
+  p += sprintf(p, " \"tempipm\":%.1f,", modbusdata.tempipm);
+  p += sprintf(p, " \"tempboost\":%.1f,", modbusdata.tempboost);
 
-  sprintf(json, "%s \"ipf\":%d,", json, modbusdata.ipf);
-  sprintf(json, "%s \"realoppercent\":%d,", json, modbusdata.realoppercent);
-  sprintf(json, "%s \"deratingmode\":%d,", json, modbusdata.deratingmode);
-  sprintf(json, "%s \"faultcode\":%d,", json, modbusdata.faultcode);
-  sprintf(json, "%s \"faultbitcode\":%d,", json, modbusdata.faultbitcode);
-  sprintf(json, "%s \"warningbitcode\":%d }", json, modbusdata.warningbitcode);
+  p += sprintf(p, " \"ipf\":%d,", modbusdata.ipf);
+  p += sprintf(p, " \"realoppercent\":%d,", modbusdata.realoppercent);
+  p += sprintf(p, " \"deratingmode\":%d,", modbusdata.deratingmode);
+  p += sprintf(p, " \"faultcode\":%d,", modbusdata.faultcode);
+  p += sprintf(p, " \"faultbitcode\":%d,", modbusdata.faultbitcode);
+  sprintf(p, " \"warningbitcode\":%d }", modbusdata.warningbitcode);
   return result;
 }
 
 uint8_t growattIF::ReadHoldingRegisters(char* json) {
   uint8_t result;
-  ESP.wdtDisable();
   result = growattInterface.readHoldingRegisters(setcounter * 64, 64);
-  ESP.wdtEnable(1);
 
   if (result == growattInterface.ku8MBSuccess)   {
     if (setcounter == 0) {      //register 0-63
@@ -250,6 +252,7 @@ uint8_t growattIF::ReadHoldingRegisters(char* json) {
       modbussettings.firmware[3] = growattInterface.getResponseBuffer(10) & 0xff;
       modbussettings.firmware[4] = growattInterface.getResponseBuffer(11) >> 8;
       modbussettings.firmware[5] = growattInterface.getResponseBuffer(11) & 0xff;
+      modbussettings.firmware[6] = '\0';
 
       strncpy(modbussettings.controlfirmware, "      ", 6);
       modbussettings.controlfirmware[0] = growattInterface.getResponseBuffer(12) >> 8;
@@ -258,6 +261,7 @@ uint8_t growattIF::ReadHoldingRegisters(char* json) {
       modbussettings.controlfirmware[3] = growattInterface.getResponseBuffer(13) & 0xff;
       modbussettings.controlfirmware[4] = growattInterface.getResponseBuffer(14) >> 8;
       modbussettings.controlfirmware[5] = growattInterface.getResponseBuffer(14) & 0xff;
+      modbussettings.controlfirmware[6] = '\0';
 
       modbussettings.startvoltage = growattInterface.getResponseBuffer(17) * 0.1;
 
@@ -272,6 +276,7 @@ uint8_t growattIF::ReadHoldingRegisters(char* json) {
       modbussettings.serial[7] = growattInterface.getResponseBuffer(26) & 0xff;
       modbussettings.serial[8] = growattInterface.getResponseBuffer(27) >> 8;
       modbussettings.serial[9] = growattInterface.getResponseBuffer(27) & 0xff;
+      modbussettings.serial[10] = '\0';
 
       modbussettings.gridvoltlowlimit = growattInterface.getResponseBuffer(52) * 0.1;
       modbussettings.gridvolthighlimit = growattInterface.getResponseBuffer(53) * 0.1;
@@ -299,30 +304,31 @@ uint8_t growattIF::ReadHoldingRegisters(char* json) {
     return result;
   }
   // Generate the modbus MQTT message
-  sprintf(json, "{", json);
-  sprintf(json, "%s \"enable\":%d,", json, modbussettings.enable);
-  sprintf(json, "%s \"safetyfuncen\":%d,", json, modbussettings.safetyfuncen);
-  sprintf(json, "%s \"maxoutputactivepp\":%d,", json, modbussettings.maxoutputactivepp);
-  sprintf(json, "%s \"maxoutputreactivepp\":%d,", json, modbussettings.maxoutputreactivepp);
+  char *p = json;
+  *p = '\0';
+  p += sprintf(p, "{");
+  p += sprintf(p, " \"enable\":%d,", modbussettings.enable);
+  p += sprintf(p, " \"safetyfuncen\":%d,", modbussettings.safetyfuncen);
+  p += sprintf(p, " \"maxoutputactivepp\":%d,", modbussettings.maxoutputactivepp);
+  p += sprintf(p, " \"maxoutputreactivepp\":%d,", modbussettings.maxoutputreactivepp);
 
-  sprintf(json, "%s \"maxpower\":%.1f,", json, modbussettings.maxpower);
-  sprintf(json, "%s \"voltnormal\":%.1f,", json, modbussettings.voltnormal);
-  sprintf(json, "%s \"startvoltage\":%.1f,", json, modbussettings.startvoltage);
-  sprintf(json, "%s \"gridvoltlowlimit\":%.1f,", json, modbussettings.gridvoltlowlimit);
-  sprintf(json, "%s \"gridvolthighlimit\":%.1f,", json, modbussettings.gridvolthighlimit);
-  sprintf(json, "%s \"gridfreqlowlimit\":%.1f,", json, modbussettings.gridfreqlowlimit);
-  sprintf(json, "%s \"gridfreqhighlimit\":%.1f,", json, modbussettings.gridfreqhighlimit);
-  sprintf(json, "%s \"gridvoltlowconnlimit\":%.1f,", json, modbussettings.gridvoltlowconnlimit);
-  sprintf(json, "%s \"gridvolthighconnlimit\":%.1f,", json, modbussettings.gridvolthighconnlimit);
-  sprintf(json, "%s \"gridfreqlowconnlimit\":%.1f,", json, modbussettings.gridfreqlowconnlimit);
-  sprintf(json, "%s \"gridfreqhighconnlimit\":%.1f,", json, modbussettings.gridfreqhighconnlimit);
+  p += sprintf(p, " \"maxpower\":%.1f,", modbussettings.maxpower);
+  p += sprintf(p, " \"voltnormal\":%.1f,", modbussettings.voltnormal);
+  p += sprintf(p, " \"startvoltage\":%.1f,", modbussettings.startvoltage);
+  p += sprintf(p, " \"gridvoltlowlimit\":%.1f,", modbussettings.gridvoltlowlimit);
+  p += sprintf(p, " \"gridvolthighlimit\":%.1f,", modbussettings.gridvolthighlimit);
+  p += sprintf(p, " \"gridfreqlowlimit\":%.1f,", modbussettings.gridfreqlowlimit);
+  p += sprintf(p, " \"gridfreqhighlimit\":%.1f,", modbussettings.gridfreqhighlimit);
+  p += sprintf(p, " \"gridvoltlowconnlimit\":%.1f,", modbussettings.gridvoltlowconnlimit);
+  p += sprintf(p, " \"gridvolthighconnlimit\":%.1f,", modbussettings.gridvolthighconnlimit);
+  p += sprintf(p, " \"gridfreqlowconnlimit\":%.1f,", modbussettings.gridfreqlowconnlimit);
+  p += sprintf(p, " \"gridfreqhighconnlimit\":%.1f,", modbussettings.gridfreqhighconnlimit);
 
-  sprintf(json, "%s \"firmware\":\"%s\",", json, modbussettings.firmware);
-  sprintf(json, "%s \"controlfirmware\":\"%s\",", json, modbussettings.controlfirmware);
-  sprintf(json, "%s \"serial\":\"%s\",", json, modbussettings.serial);
-  sprintf(json, "%s \"modulPower\":\"%04X\",", json, modbussettings.modul);
-  sprintf(json, "%s \"TrakerModel\":%d", json, modbussettings.TrakerModel);
-  sprintf(json, "%s }", json);
+  p += sprintf(p, " \"firmware\":\"%s\",", modbussettings.firmware);
+  p += sprintf(p, " \"controlfirmware\":\"%s\",", modbussettings.controlfirmware);
+  p += sprintf(p, " \"serial\":\"%s\",", modbussettings.serial);
+  p += sprintf(p, " \"modulPower\":\"%04X\",", modbussettings.modul);
+  sprintf(p, " \"TrakerModel\":%d }", modbussettings.TrakerModel);
   return result;
 }
 
