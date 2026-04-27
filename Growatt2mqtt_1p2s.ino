@@ -50,8 +50,12 @@ unsigned long lastModbusMillis = 0;
 unsigned long lastStatusMillis = 0;
 #ifdef DALY_BMS
 unsigned long lastDalyMillis = 0;
+float dalySOC = 100;
 #endif
 uint8_t outputPercent = 100;
+bool zeroExportActive = true;
+bool inverterOn = true;
+uint8_t out = 100; 
 
 void writeLog(const char *format, ...)
 {
@@ -185,6 +189,7 @@ void reconnect() {
 
 #ifdef DALY_BMS
 void dalyCallback() {
+  dalySOC = dalyInterface.get.packSOC;
   // Serial.println("Daly BMS callback called, sending MQTT message...");
   if (mqtt.connected()) {
     char topic[80];
@@ -487,16 +492,34 @@ void loop() {
   ArduinoOTA.handle();
 
   // Handle SmartMeterReader (non-blocking, performs HTTP request if interval elapsed)
+#ifdef DALY_BMS 
+  if (dalySOC < 15) {
+    zeroExportActive = false;
+    if (inverterOn) {
+      inverterOn = false;
+      growattInterface.writeRegister(growattInterface.regOnOff, 0);
+      delay(100);
+    }
+  } else if (dalySOC > 18) {
+    if (!inverterOn) {
+      inverterOn = true;
+      growattInterface.writeRegister(growattInterface.regOnOff, 1);
+      delay(100);
+    }
+    zeroExportActive = true;
+  }
+#endif
 #ifdef ZeroExport
-  uint8_t out;
-  zeroExportReader.handle(dataJson,settingsJson,&out);
-  if(out != outputPercent ){
-    outputPercent = out;
+  if (zeroExportActive) {
+    zeroExportReader.handle(dataJson,settingsJson,&out);
+  }
+#endif
+  if(out != outputPercent ){  
+    outputPercent = out;  
     uint8_t result = growattInterface.writeRegister(growattInterface.regMaxOutputActive, outputPercent);
     if (result == growattInterface.Success)
       holdingregisters = false;
   }
-#endif
 
   // Handle MQTT connection/reconnection
   if (mqtt_server != "") {
