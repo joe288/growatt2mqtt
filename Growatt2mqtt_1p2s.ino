@@ -13,8 +13,13 @@
 // - RS485 to TTL converter: https://www.aliexpress.com/item/1005001621798947.html
 // - To power from mains: Hi-Link 5V power supply (https://www.aliexpress.com/item/1005001484531375.html), fuseholder and 1A fuse, and varistor
 
+#ifdef ESP32
+#include <WiFi.h>                 // Wifi connection
+#include <WebServer.h>            // Web server for general HTTP response
+#else
 #include <ESP8266WiFi.h>          // Wifi connection
 #include <ESP8266WebServer.h>     // Web server for general HTTP response
+#endif
 #include <PubSubClient.h>         // MQTT support
 #include <WiFiUdp.h>
 #include <ArduinoOTA.h>
@@ -25,7 +30,11 @@
 #include "mqtt_discovery.h"
 #include <SoftwareSerial.h>
 
+#ifdef ESP32
+WebServer server(80);
+#else
 ESP8266WebServer server(80);
+#endif
 WiFiClient espClient;
 PubSubClient mqtt(mqtt_server, 1883, 0, espClient);
 
@@ -34,9 +43,14 @@ CRGB leds[NUM_LEDS];
 SoftwareSerial sharedRS485(MAX485_RX, MAX485_TX);
 growattIF growattInterface(MAX485_RE_NEG, MAX485_DE, MAX485_RX, MAX485_TX);
 
+// SoftwareSerial BMS_RS485(BMS_MAX485_RX, BMS_MAX485_TX);
+
 #ifdef DALY_BMS
 #include "daly.h"
-DalyBms  dalyInterface(&sharedRS485, MAX485_DE, MAX485_RE_NEG);
+// DalyBms  dalyInterface(&BMS_RS485, BMS_MAX485_DE, BMS_MAX485_RE_NEG);
+DalyBms  dalyInterface(BMS_MAX485_RX, BMS_MAX485_TX, BMS_MAX485_DE, BMS_MAX485_RE_NEG);
+unsigned long lastDalyMillis = 0;
+float dalySOC = 100;
 #endif
 
 #ifdef ZeroExport
@@ -44,18 +58,55 @@ DalyBms  dalyInterface(&sharedRS485, MAX485_DE, MAX485_RE_NEG);
 zeroExport zeroExportReader(SmartMeterEndpoint, UPDATE_SMETER);
 #endif
 
+struct VictronDevice;
+#ifdef Vicrton
+#include "VictronBLE.h"
+VictronBLE victron;
+unsigned long lastVictronMillis = 0;
+#endif
+
 char settingsJson[1024];
 char dataJson[1024];
 unsigned long lastModbusMillis = 0;
 unsigned long lastStatusMillis = 0;
-#ifdef DALY_BMS
-unsigned long lastDalyMillis = 0;
-float dalySOC = 100;
-#endif
+
 uint8_t outputPercent = 100;
 bool zeroExportActive = true;
 bool inverterOn = true;
 uint8_t out = 100; 
+bool victronDiscoveryPublished = false;
+static volatile bool victronDiscoveryRequested = false;
+
+// Simple ring buffer to enqueue MQTT messages from BLE callback (avoid blocking network calls in BTC task)
+#define VICTRON_QUEUE_SIZE 8
+struct MqttMsg { char topic[128]; char payload[256]; bool retain; };
+static MqttMsg victronQueue[VICTRON_QUEUE_SIZE];
+static volatile uint8_t victronQueueHead = 0;
+static volatile uint8_t victronQueueTail = 0;
+
+static bool enqueueVictronMsg(const char* topic, const char* payload, bool retain) {
+  uint8_t next = (victronQueueHead + 1) % VICTRON_QUEUE_SIZE;
+  if (next == victronQueueTail) {
+    // queue full, drop message
+    return false;
+  }
+  strncpy(victronQueue[victronQueueHead].topic, topic, sizeof(victronQueue[victronQueueHead].topic) - 1);
+  victronQueue[victronQueueHead].topic[sizeof(victronQueue[victronQueueHead].topic) - 1] = '\0';
+  strncpy(victronQueue[victronQueueHead].payload, payload, sizeof(victronQueue[victronQueueHead].payload) - 1);
+  victronQueue[victronQueueHead].payload[sizeof(victronQueue[victronQueueHead].payload) - 1] = '\0';
+  victronQueue[victronQueueHead].retain = retain;
+  // advance head
+  victronQueueHead = next;
+  return true;
+}
+
+static bool dequeueVictronMsg(MqttMsg &out) {
+  if (victronQueueHead == victronQueueTail) return false;
+  // copy out
+  memcpy(&out, &victronQueue[victronQueueTail], sizeof(MqttMsg));
+  victronQueueTail = (victronQueueTail + 1) % VICTRON_QUEUE_SIZE;
+  return true;
+}
 
 void writeLog(const char *format, ...)
 {
@@ -263,6 +314,47 @@ void dalyCallback() {
 }
 #endif
 
+#ifdef Vicrton
+void victronCallback(const VictronDevice* dev) {
+    Serial.printf("Received data from %s (%s), RSSI: %d dBm\n", dev->name, dev->mac, dev->rssi);
+    if (dev->deviceType == DEVICE_TYPE_SOLAR_CHARGER) {
+        Serial.printf("Solar %s: %.2fV %.2fA %dW %d %d\n",
+            dev->name,
+            dev->solar.batteryVoltage,
+            dev->solar.batteryCurrent*10,
+            (int)dev->solar.panelPower,
+            getChargeStateString(dev->solar.chargeState),
+            dev->solar.yieldToday);
+
+        // Enqueue MQTT publish to avoid calling network functions from the BTC task (stack overflow)
+        char topic[128];
+        char payload[256];
+
+        sprintf(topic, "%s/%s", topicRoot, dev->mac);
+        sprintf(payload,
+          "{\"name\":\"%s\",\"mac\":\"%s\",\"rssi\":%d,\"batteryVoltage\":%.2f,\"batteryCurrent\":%.1f,\"panelPower\":%d,\"chargeState\":\"%s\",\"yieldToday\":%d}",
+          dev->name,
+          dev->mac,
+          dev->rssi,
+          dev->solar.batteryVoltage,
+          dev->solar.batteryCurrent * 10,
+          (int)dev->solar.panelPower,
+          getChargeStateString(dev->solar.chargeState),
+          dev->solar.yieldToday);
+
+        if (!enqueueVictronMsg(topic, payload, true)) {
+          // queue full: drop or log
+          Serial.println("Victron queue full, dropping message");
+        }
+
+        if (!victronDiscoveryPublished) {
+          // request discovery publish from main loop instead of doing it from BTC task
+          victronDiscoveryRequested = true;
+        }
+  }
+}
+#endif
+
 void setup() {
   FastLED.addLeds<LED_TYPE, RGBLED_PIN, COLOR_ORDER>(leds, NUM_LEDS).setCorrection( TypicalSMD5050 );
   FastLED.setBrightness( BRIGHTNESS );
@@ -367,6 +459,23 @@ void setup() {
 
   leds[0] = CRGB::Black;
   FastLED.show();
+
+  #ifdef Vicrton
+    victron.begin(5); // 5 second scan duration
+    victron.setCallback(victronCallback);
+
+    // Add your device (replace with your MAC and key)
+    victron.addDevice(
+        "My MPPT",                          // Name
+        "E2:EE:A7:DA:D8:01",                // MAC address
+        "af909c4d3dd13a0ccf5d38e6b1b267c0", // Encryption key
+        DEVICE_TYPE_SOLAR_CHARGER           // Device type (optional, auto-detected)
+    );
+    // victron.setDebug(true);
+    Serial.printf("Configured %d BLE devices\n", (int)victron.getDeviceCount());
+
+    Serial.println("Setup complete, starting BLE scan...");
+  #endif
 }
 
 void callback(char* topic, byte* payload, unsigned int length) {
@@ -514,22 +623,40 @@ void loop() {
     zeroExportReader.handle(dataJson,settingsJson,&out);
   }
 #endif
+#ifdef Growatt
   if(out != outputPercent ){  
     outputPercent = out;  
     uint8_t result = growattInterface.writeRegister(growattInterface.regMaxOutputActive, outputPercent);
     if (result == growattInterface.Success)
       holdingregisters = false;
   }
-
+#endif
   // Handle MQTT connection/reconnection
   if (mqtt_server != "") {
     if (!mqtt.connected()) {
       reconnect();
     }
     mqtt.loop();
+
+    // If BLE requested Home Assistant discovery, publish it from main loop (safe stack)
+    if (victronDiscoveryRequested && mqtt.connected() && !victronDiscoveryPublished) {
+      publishHADiscovery(mqtt, clientID, newclientid, topicRoot, buildversion);
+      victronDiscoveryPublished = true;
+      victronDiscoveryRequested = false;
+    }
+
+    // Publish queued Victron MQTT messages from main loop (avoids stack overflow in BTC task)
+    {
+      MqttMsg msg;
+      while (mqtt.connected() && dequeueVictronMsg(msg)) {
+        mqtt.publish(msg.topic, msg.payload, msg.retain);
+        Serial.println(F("Victron MQTT sent"));
+      }
+    }
   }
 
   unsigned long now = millis();
+#ifdef Growatt
   if (now - lastModbusMillis >= (unsigned long)UPDATE_MODBUS * 1000UL) {
     lastModbusMillis = now;
     if (!holdingregisters) {
@@ -538,6 +665,7 @@ void loop() {
       ReadInputRegisters();
     }
   }
+#endif
 
   if (now - lastStatusMillis >= (unsigned long)UPDATE_STATUS * 1000UL) {
     lastStatusMillis = now;
@@ -555,6 +683,13 @@ void loop() {
   if (now - lastDalyMillis >= (unsigned long)UPDATE_DALY * 1000UL) {
     lastDalyMillis = now;
     dalyInterface.loop();
+  }
+#endif
+
+#ifdef Vicrton
+  if (now - lastVictronMillis >= (unsigned long)UPDATE_VICTRON * 1000UL) {
+    lastVictronMillis = now;
+    victron.loop();
   }
 #endif
 

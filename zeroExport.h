@@ -3,7 +3,11 @@
 #endif
 
 #include "Arduino.h"
+#ifdef ESP32
+#include <HTTPClient.h>
+#else
 #include <ESP8266HTTPClient.h>
+#endif
 #include <WiFiClient.h>
 #include <ArduinoJson.h>
 

@@ -176,6 +176,37 @@ void publishHADiscovery(PubSubClient &mqtt, const char* baseClientID, const char
   mqtt.publish(discTopic, payload, true);
   delay(50);
 
+#ifdef Vicrton
+  // Victron Solar Charger: Battery Voltage
+  sprintf(discTopic, "homeassistant/sensor/%s_victron_battery_voltage/config", uniqueClientID);
+  sprintf(payload, "{\"name\":\"%s Victron Battery Voltage\",\"state_topic\":\"%svictron/%s\",\"availability_topic\":\"%s/connection\",\"unique_id\":\"%s_victron_battery_voltage\",\"unit_of_measurement\":\"V\",\"device_class\":\"voltage\",\"state_class\":\"measurement\",\"value_template\":\"{{ value_json.batteryVoltage }}\",\"device\":{\"identifiers\":[\"%s_victron\"],\"name\":\"%s Victron Solar Charger\",\"model\":\"Victron Solar Charger\",\"sw_version\":\"%s\"}}", baseClientID, topicRoot, uniqueClientID, topicRoot, uniqueClientID, uniqueClientID, baseClientID, buildversion);
+  mqtt.publish(discTopic, payload, true);
+  delay(50);
+
+  // Victron Solar Charger: Battery Current
+  sprintf(discTopic, "homeassistant/sensor/%s_victron_battery_current/config", uniqueClientID);
+  sprintf(payload, "{\"name\":\"%s Victron Battery Current\",\"state_topic\":\"%svictron/%s\",\"availability_topic\":\"%s/connection\",\"unique_id\":\"%s_victron_battery_current\",\"unit_of_measurement\":\"A\",\"state_class\":\"measurement\",\"value_template\":\"{{ value_json.batteryCurrent }}\",\"device\":{\"identifiers\":[\"%s_victron\"],\"name\":\"%s Victron Solar Charger\",\"model\":\"Victron Solar Charger\",\"sw_version\":\"%s\"}}", baseClientID, topicRoot, uniqueClientID, topicRoot, uniqueClientID, uniqueClientID, baseClientID, buildversion);
+  mqtt.publish(discTopic, payload, true);
+  delay(50);
+
+  // Victron Solar Charger: Panel Power
+  sprintf(discTopic, "homeassistant/sensor/%s_victron_panel_power/config", uniqueClientID);
+  sprintf(payload, "{\"name\":\"%s Victron Panel Power\",\"state_topic\":\"%svictron/%s\",\"availability_topic\":\"%s/connection\",\"unique_id\":\"%s_victron_panel_power\",\"unit_of_measurement\":\"W\",\"device_class\":\"power\",\"state_class\":\"measurement\",\"value_template\":\"{{ value_json.panelPower }}\",\"device\":{\"identifiers\":[\"%s_victron\"],\"name\":\"%s Victron Solar Charger\",\"model\":\"Victron Solar Charger\",\"sw_version\":\"%s\"}}", baseClientID, topicRoot, uniqueClientID, topicRoot, uniqueClientID, uniqueClientID, baseClientID, buildversion);
+  mqtt.publish(discTopic, payload, true);
+  delay(50);
+
+  // Victron Solar Charger: Yield Today
+  sprintf(discTopic, "homeassistant/sensor/%s_victron_yield_today/config", uniqueClientID);
+  sprintf(payload, "{\"name\":\"%s Victron Yield Today\",\"state_topic\":\"%svictron/%s\",\"availability_topic\":\"%s/connection\",\"unique_id\":\"%s_victron_yield_today\",\"unit_of_measurement\":\"Wh\",\"device_class\":\"energy\",\"state_class\":\"total\",\"value_template\":\"{{ value_json.yieldToday }}\",\"device\":{\"identifiers\":[\"%s_victron\"],\"name\":\"%s Victron Solar Charger\",\"model\":\"Victron Solar Charger\",\"sw_version\":\"%s\"}}", baseClientID, topicRoot, uniqueClientID, topicRoot, uniqueClientID, uniqueClientID, baseClientID, buildversion);
+  mqtt.publish(discTopic, payload, true);
+  delay(50);
+
+  // Victron Solar Charger: Charge State
+  sprintf(discTopic, "homeassistant/sensor/%s_victron_charge_state/config", uniqueClientID);
+  sprintf(payload, "{\"name\":\"%s Victron Charge State\",\"state_topic\":\"%svictron/%s\",\"availability_topic\":\"%s/connection\",\"unique_id\":\"%s_victron_charge_state\",\"entity_category\":\"diagnostic\",\"value_template\":\"{{ value_json.chargeState }}\",\"device\":{\"identifiers\":[\"%s_victron\"],\"name\":\"%s Victron Solar Charger\",\"model\":\"Victron Solar Charger\",\"sw_version\":\"%s\"}}", baseClientID, topicRoot, uniqueClientID, topicRoot, uniqueClientID, uniqueClientID, baseClientID, buildversion);
+  mqtt.publish(discTopic, payload, true);
+  delay(50);
+#endif
 #ifdef DALY_BMS
   // Daly BMS: Voltage
   sprintf(discTopic, "homeassistant/sensor/%s_daly_voltage/config", uniqueClientID);
